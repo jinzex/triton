@@ -582,9 +582,8 @@ LinearLayout LinearLayout::reshapeOuts(
 }
 
 LinearLayout operator*(LinearLayout inner, LinearLayout outer) {
-
   // Check that dims common to outer and inner have the same relative order.
-  assertCommonDimsSameOrder(inner.getOutDimNames(), outer.getInDimNames());
+  assertCommonDimsSameOrder(inner.getOutDimNames(), outer.getOutDimNames());
   assertCommonDimsSameOrder(inner.getInDimNames(), outer.getInDimNames());
 
   // Get the sizeLog2 of all input and output dimensions we're going to

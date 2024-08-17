@@ -342,7 +342,8 @@ struct ConvertLayoutOpUsingLinearLayoutsConversion
                                    OpAdaptor adaptor,
                                    ConversionPatternRewriter &rewriter) const {
     // TODO(jlebar): Implement me.
-    return failure();
+    return transferWithinBlockOrGroup(op, srcLayout, dstLayout, adaptor,
+                                      rewriter);
   }
 
   LogicalResult
