@@ -607,6 +607,13 @@ TEST_F(LinearLayoutTest, DivideRight_EliminateInDim) {
   LinearLayout l6({{S("in2"), {}}}, {S("out1"), S("out2")});
   ASSERT_EQ(l5 * l6, l4);
   EXPECT_EQ(l4.divideRight(l6), l5);
+
+  LinearLayout l7({{S("in1"), {}}, {S("in2"), {{0, 1}}}, {S("in3"), {}}},
+                  {S("out1"), S("out2")});
+  LinearLayout l8({{S("in2"), {{0, 1}}}}, {S("out1"), S("out2")});
+  LinearLayout l9({{S("in1"), {}}, {S("in2"), {}}, {S("in3"), {}}}, {});
+  ASSERT_EQ(l9 * l8, l7);
+  EXPECT_EQ(l7.divideRight(l8), l9);
 }
 
 TEST_F(LinearLayoutTest, DivideRight_EliminateOutDim) {
