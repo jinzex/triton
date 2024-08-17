@@ -600,6 +600,13 @@ TEST_F(LinearLayoutTest, DivideRight_EliminateInDim) {
   LinearLayout l3({{S("in2"), {{0, 1}, {1, 0}}}}, {S("out1"), S("out2")});
   ASSERT_EQ(l3 * l2, l1);
   EXPECT_EQ(l1.divideRight(l2), l3);
+
+  LinearLayout l4({{S("in1"), {{0, 1}, {0, 2}}}, {S("in2"), {}}},
+                  {S("out1"), S("out2")});
+  LinearLayout l5({{S("in1"), {{0, 1}, {0, 2}}}}, {S("out1"), S("out2")});
+  LinearLayout l6({{S("in2"), {}}}, {S("out1"), S("out2")});
+  ASSERT_EQ(l5 * l6, l4);
+  EXPECT_EQ(l4.divideRight(l6), l5);
 }
 
 TEST_F(LinearLayoutTest, DivideRight_EliminateOutDim) {
@@ -613,6 +620,16 @@ TEST_F(LinearLayoutTest, DivideRight_EliminateOutDim) {
   LinearLayout l3({{S("in2"), {{1}, {1}}}}, {S("out1")});
   ASSERT_EQ(l3 * l2, l1);
   EXPECT_EQ(l1.divideRight(l2), l3);
+
+  LinearLayout l4(
+      {
+          {S("in1"), {{0, 1}, {0, 2}}},
+      },
+      {S("out1"), S("out2")});
+  LinearLayout l5({{S("in1"), {{1}, {2}}}}, {S("out2")});
+  LinearLayout l6({{S("in1"), {}}}, {S("out1")});
+  ASSERT_EQ(l6 * l5, l4);
+  EXPECT_EQ(l4.divideRight(l5), l6);
 }
 
 TEST_F(LinearLayoutTest, DivideRight_Assertion) {
