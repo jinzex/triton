@@ -611,7 +611,6 @@ bool cvtNeedsWarpShuffle(RankedTensorType srcTy, RankedTensorType dstTy) {
       return true;
     }
   }
-  llvm::errs() << "failure1\n";
   return false;
 }
 
