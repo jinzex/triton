@@ -124,23 +124,8 @@ ScratchConfig getScratchConfigForCvt(RankedTensorType srcTy,
   // TODO: Fix the legacy issue that ourOrd[0] == 0 always means
   //       that we cannot do vectorization.
   unsigned innerDim = rank - 1;
-  scratchConfig.inVec = outOrd[0] != innerDim  ? 1
-                        : inOrd[0] != innerDim ? 1
-                                               : srcContigPerThread;
-  scratchConfig.outVec = outOrd[0] != innerDim ? 1 : dstContigPerThread;
-
-  // For conversions to MmaV1 (Nvidia V100), this inVec is hardcoded in the
-  // codegen.
-  if (auto mma = mlir::dyn_cast<NvidiaMmaEncodingAttr>(srcLayout)) {
-    if (mma.getVersionMajor() == 1) {
-      scratchConfig.inVec = srcContigPerThread;
-    } else if (mlir::isa<BlockedEncodingAttr>(dstLayout)) {
-      // when storing from mma layout and loading in blocked layout vectorizing
-      // the load back gives better performance even if there is a
-      // transposition.
-      scratchConfig.outVec = dstContigPerThread;
-    }
-  }
+  scratchConfig.inVec = inOrd[0] != outOrd[0] ? 1 : srcContigPerThread;
+  scratchConfig.outVec = dstContigPerThread;
 
   if (rank <= 1)
     return scratchConfig;
