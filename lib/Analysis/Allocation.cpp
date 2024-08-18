@@ -121,8 +121,7 @@ ScratchConfig getScratchConfigForCvt(RankedTensorType srcTy,
       getUniqueContigPerThread(srcLayout, srcTy.getShape())[inOrd[0]];
   unsigned dstContigPerThread =
       getUniqueContigPerThread(dstLayout, dstTy.getShape())[outOrd[0]];
-  // TODO: Fix the legacy issue that ourOrd[0] == 0 always means
-  //       that we cannot do vectorization.
+
   unsigned innerDim = rank - 1;
   scratchConfig.inVec = inOrd[0] != outOrd[0] ? 1 : srcContigPerThread;
   scratchConfig.outVec = dstContigPerThread;
