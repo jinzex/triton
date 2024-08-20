@@ -146,8 +146,10 @@ def do_bench(fn, warmup=25, rep=100, grad_to_none=None, quantiles=None, fast_flu
     """
     assert return_mode in ["min", "max", "mean", "median"]
     import torch
-
-    fn()
+    # warmup
+    n_warmup = 1000
+    for i in range(n_warmup):
+        fn()
     torch.cuda.synchronize()
 
     # We maintain a buffer of 256 MB that we clear
