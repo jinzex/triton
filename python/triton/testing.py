@@ -6,6 +6,49 @@ from contextlib import contextmanager
 from typing import Any, Dict, List
 from . import language as tl
 
+import time
+import pynvml
+from contextlib import contextmanager
+
+# Initialize NVML
+pynvml.nvmlInit()
+
+# Function to get GPU clock and power usage
+def get_gpu_metrics(handle):
+    clock = pynvml.nvmlDeviceGetClockInfo(handle, pynvml.NVML_CLOCK_GRAPHICS)
+    power = pynvml.nvmlDeviceGetPowerUsage(handle) / 1000.0  # Convert to Watts
+    return clock, power
+
+# Get the GPU handle (assuming you're using GPU 0)
+handle = pynvml.nvmlDeviceGetHandleByIndex(0)
+
+@contextmanager
+def monitor_gpu():
+    clock_speeds = []
+    power_usages = []
+    
+    def collect_metrics():
+        while monitoring:
+            clock, power = get_gpu_metrics(handle)
+            clock_speeds.append(clock)
+            power_usages.append(power)
+            time.sleep(0.05)  # Adjust the interval as needed
+
+    monitoring = True
+    from threading import Thread
+    monitor_thread = Thread(target=collect_metrics)
+    monitor_thread.start()
+
+    try:
+        yield
+    finally:
+        monitoring = False
+        monitor_thread.join()
+        avg_clock = sum(clock_speeds) / len(clock_speeds) if clock_speeds else 0
+        avg_power = sum(power_usages) / len(power_usages) if power_usages else 0
+        print()
+        print(f"Average GPU Clock: {avg_clock:.2f} MHz, {clock_speeds}")
+        print(f"Average GPU Power: {avg_power:.2f} Watts, {power_usages} ")
 
 def nvsmi(attrs):
     attrs = ','.join(attrs)
@@ -16,7 +59,7 @@ def nvsmi(attrs):
     return ret
 
 
-def do_bench_cudagraph(fn, rep=20, grad_to_none=None, return_mode="mean"):
+def do_bench_cudagraph(fn, rep=30000, grad_to_none=None, return_mode="mean"):
     """
     Benchmark the runtime of the provided function.
 
@@ -33,7 +76,9 @@ def do_bench_cudagraph(fn, rep=20, grad_to_none=None, return_mode="mean"):
     if torch.cuda.current_stream() == torch.cuda.default_stream():
         raise RuntimeError("Cannot capture graph in default stream. Please use side stream in benchmark code.")
     # warmup
-    fn()
+    n_warmup = 1000
+    for i in range(n_warmup):
+        fn()
     # step 1 - we estimate the amount of time the kernel call takes
     # NOTE: this estimate isn't super accurate because the GPU isn't warmed up at this point
     #       but it is probably good enough
@@ -54,6 +99,7 @@ def do_bench_cudagraph(fn, rep=20, grad_to_none=None, return_mode="mean"):
     torch.cuda.synchronize()
     estimate_ms = start_event.elapsed_time(end_event)
     n_repeat = max(1, int(rep / estimate_ms))
+    print(n_repeat)
     # step 2 - construct a cuda graph with `n_repeat` unrolled function calls to minimize
     # host overhead
     g = torch.cuda.CUDAGraph()
@@ -66,15 +112,16 @@ def do_bench_cudagraph(fn, rep=20, grad_to_none=None, return_mode="mean"):
     torch.cuda.synchronize()
     # measure time and return
     ret = []
-    n_retries = 10
-    for i in range(n_retries):
-        start_event = torch.cuda.Event(enable_timing=True)
-        end_event = torch.cuda.Event(enable_timing=True)
-        start_event.record()
-        g.replay()
-        end_event.record()
-        torch.cuda.synchronize()
-        ret += [start_event.elapsed_time(end_event) / n_repeat]
+    n_retries = 1
+    with monitor_gpu(): 
+        for i in range(n_retries):
+            start_event = torch.cuda.Event(enable_timing=True)
+            end_event = torch.cuda.Event(enable_timing=True)
+            start_event.record()
+            g.replay()
+            end_event.record()
+            torch.cuda.synchronize()
+            ret += [start_event.elapsed_time(end_event) / n_repeat]
     times = torch.tensor(ret)
     return getattr(torch, return_mode)(times).item()
 
